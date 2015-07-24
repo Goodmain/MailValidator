@@ -22,7 +22,7 @@
   },
   "autoload": {
     "psr-4": {
-      "goodmain\\MailValidator\\": "src"
+      "Goodmain\\MailValidator\\": "src"
     }
   }
 }
