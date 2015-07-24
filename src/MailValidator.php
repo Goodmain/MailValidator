@@ -124,6 +124,14 @@ class MailValidator
     }
 
     /**
+     * @param array $nameservers
+     */
+    public function setNameservers($nameservers)
+    {
+        $this->nameservers = $nameservers;
+    }
+
+    /**
      * Validate Email Addresses
      * @param array|bool $emails - List of Emails to Validate
      * @return array - Associative List of Emails and their validation results
