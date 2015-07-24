@@ -1,13 +1,13 @@
 {
-  "name": "goodmain/votesmart",
+  "name": "goodmain/mail-validator",
   "type": "library",
-  "description": "Library for VoteSmart API",
-  "keywords": ["votesmart", "api"],
-  "license": "",
+  "description": "Library for Email validation",
+  "keywords": ["email", "validate", "MX"],
+  "license": "GNU",
   "homepage": "",
   "authors": [
     {
-      "name": "Vitaly Iskrin",
+      "name": "Goodmain",
       "email": "iskrinvv@yandex.ru",
       "role": "Developer"
     }
@@ -16,14 +16,13 @@
     "source": "https://github.com/goodmain/votesmart"
   },
   "require": {
-    "php": ">=5.4.0",
-    "ext-curl": "*"
+    "php": ">=5.4.0"
   },
   "require-dev": {
   },
   "autoload": {
     "psr-4": {
-      "Goodmain\\VoteSmart\\": "src"
+      "goodmain\\MailValidator\\": "src"
     }
   }
 }
