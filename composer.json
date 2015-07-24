@@ -1,0 +1,29 @@
+{
+  "name": "goodmain/votesmart",
+  "type": "library",
+  "description": "Library for VoteSmart API",
+  "keywords": ["votesmart", "api"],
+  "license": "",
+  "homepage": "",
+  "authors": [
+    {
+      "name": "Vitaly Iskrin",
+      "email": "iskrinvv@yandex.ru",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "source": "https://github.com/goodmain/votesmart"
+  },
+  "require": {
+    "php": ">=5.4.0",
+    "ext-curl": "*"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Goodmain\\VoteSmart\\": "src"
+    }
+  }
+}
