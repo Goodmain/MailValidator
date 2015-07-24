@@ -10,60 +10,53 @@ class MailValidator
      * PHP Socket resource to remote MTA
      * @var resource $sock
      */
-    var $sock;
-
-    /**
-     * Current User being validated
-     */
-    var $user;
+    private $sock;
 
     /**
      * List of domains to validate users on
      * @var array
      */
-    var $domains;
+     private $domains;
 
     /**
      * SMTP Port
      * @var int
      */
-    var $port = 25;
+    private $port = 25;
 
     /**
      * Maximum Connection Time to wait for connection establishment per MTA
      * @var int
      */
-    var $maxConnectionTime = 30;
+    private $maxConnectionTime = 30;
 
     /**
      * Maximum time to read from socket before giving up
      * @var int
      */
-    var $maxReadTime = 5;
+    private $maxReadTime = 5;
 
     /**
      * username of sender
      */
-    var $fromUser = 'user';
+    private $fromUser = 'user';
 
     /**
      * Host Name of sender
      */
-    var $fromDomain = 'localhost';
+    private $fromDomain = 'localhost';
 
     /**
      * Nameservers to use when make DNS query for MX entries
      * @var array $nameservers
      */
-    var $nameservers = [
+    private $nameservers = [
         '192.168.0.1'
     ];
 
-    var $debug = false;
+    private $debug = false;
 
     /**
-     * Initializes the Class
-     * @param array|bool $emails - List of Emails to Validate
      * @param string|bool $sender - Email of validator
      */
     public function __construct($sender = false)
@@ -75,54 +68,78 @@ class MailValidator
 
     /**
      * Set the Emails to validate
-     * @param array $emails - List of Emails
+     * @param array $emails
      */
     public function setEmails($emails)
     {
+        $this->domains = [];
+
         foreach ($emails as $email) {
-            list($user, $domain) = $this->parseEmail($email);
-            if (!isset($this->domains[$domain])) {
-                $this->domains[$domain] = [];
+            $parts = explode('@', $email);
+            if (count($parts) == 2) {
+                if (!isset($this->domains[$parts[1]])) {
+                    $this->domains[$parts[1]] = [];
+                }
+                $this->domains[$parts[1]][] = $parts[0];
             }
-            $this->domains[$domain][] = $user;
         }
     }
 
     /**
-     * Set the Email of the sender/validator
-     * @param string $email
+     * Set Email of validator
+     * @param string $sender
      */
-    public function setSenderEmail($email)
+    public function setSenderEmail($sender)
     {
-        $parts = $this->parseEmail($email);
-        $this->from_user = $parts[0];
-        $this->from_domain = $parts[1];
+        $parts = explode('@', $sender);
+
+        if (count($parts) == 2) {
+            $this->fromUser = $parts[0];
+            $this->fromDomain = $parts[1];
+        }
+    }
+
+    /**
+     * @param int $port
+     */
+    public function setPort($port)
+    {
+        $this->port = $port;
+    }
+
+    /**
+     * @param int $maxConnectionTime
+     */
+    public function setMaxConnectionTime($maxConnectionTime)
+    {
+        $this->maxConnectionTime = $maxConnectionTime;
+    }
+
+    /**
+     * @param int $maxReadTime
+     */
+    public function setMaxReadTime($maxReadTime)
+    {
+        $this->maxReadTime = $maxReadTime;
     }
 
     /**
      * Validate Email Addresses
      * @param array|bool $emails - List of Emails to Validate
-     * @param string|bool $sender - Email of validator
-     * @return array Associative List of Emails and their validation results
+     * @return array - Associative List of Emails and their validation results
      */
-    function validate($emails = false, $sender = false)
+    public function validate($emails = false)
     {
         $results = [];
 
         if ($emails) {
             $this->setEmails($emails);
         }
-        if ($sender) {
-            $this->setSenderEmail($sender);
-        }
 
         // query the MTAs on each Domain
         foreach ($this->domains as $domain => $users) {
 
             $mxs = [];
-
-            // current domain being queried
-            $this->domain = $domain;
 
             // retrieve SMTP Server via MX query on domain
             list($hosts, $mxweights) = $this->queryMX($domain);
@@ -190,7 +207,6 @@ class MailValidator
                     } else {
                         $results[$user . '@' . $domain] = false;
                     }
-
                 }
 
                 // reset before quit
@@ -207,7 +223,7 @@ class MailValidator
     }
 
 
-    function send($msg)
+    private function send($msg)
     {
         fwrite($this->sock, $msg . "\r\n");
 
@@ -221,9 +237,9 @@ class MailValidator
 
     /**
      * Query DNS server for MX entries
-     * @return
+     * @return array
      */
-    function queryMX($domain)
+    private function queryMX($domain)
     {
         $hosts = [];
         $mxweights = [];
@@ -249,27 +265,10 @@ class MailValidator
         return [$hosts, $mxweights];
     }
 
-    /**
-     * Simple function to replicate PHP 5 behaviour. http://php.net/microtime
-     */
-    function microtime_float()
-    {
-        list($usec, $sec) = explode(" ", microtime());
-        return ((float)$usec + (float)$sec);
-    }
-
-    function debug($str)
+    private function debug($str)
     {
         if ($this->debug) {
             echo '<pre>' . htmlentities($str) . '</pre>';
         }
-    }
-//---------------------------
-    private function parseEmail($email)
-    {
-        $parts = explode('@', $email);
-        $domain = array_pop($parts);
-        $user = implode('@', $parts);
-        return [$user, $domain];
     }
 }
