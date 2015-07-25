@@ -12,9 +12,6 @@
       "role": "Developer"
     }
   ],
-  "support": {
-    "source": "https://github.com/goodmain/votesmart"
-  },
   "require": {
     "php": ">=5.4.0"
   },

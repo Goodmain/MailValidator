@@ -1,5 +1,7 @@
 <?php
 
+namespace Goodmain\MailValidator;
+
 /**
  * Validate Email Addresses Via SMTP
  */
