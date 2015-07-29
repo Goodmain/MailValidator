@@ -39,7 +39,7 @@ class MailValidator
     private $maxReadTime = 5;
 
     /**
-     * username of sender
+     * Username of sender
      */
     private $fromUser = 'user';
 
@@ -70,13 +70,13 @@ class MailValidator
 
     /**
      * Set the Emails to validate
-     * @param array $emails
+     * @param array|string $emails
      */
     public function setEmails($emails)
     {
         $this->domains = [];
 
-        foreach ($emails as $email) {
+        foreach ((array)$emails as $email) {
             $parts = explode('@', $email);
             if (count($parts) == 2) {
                 if (!isset($this->domains[$parts[1]])) {
@@ -226,9 +226,9 @@ class MailValidator
                 $this->send("quit");
                 // close socket
                 fclose($this->sock);
-
             }
         }
+
         return $results;
     }
 
