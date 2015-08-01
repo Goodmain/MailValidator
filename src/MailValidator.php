@@ -12,7 +12,7 @@ class MailValidator
      * PHP Socket resource to remote MTA
      * @var resource $sock
      */
-    private $sock;
+    private $socket;
 
     /**
      * List of domains to validate users on
@@ -49,10 +49,10 @@ class MailValidator
     private $fromDomain = 'localhost';
 
     /**
-     * Nameservers to use when make DNS query for MX entries
-     * @var array $nameservers
+     * Servers to use when make DNS query for MX entries
+     * @var array $servers
      */
-    private $nameservers = [
+    private $servers = [
         '192.168.0.1'
     ];
 
@@ -126,11 +126,12 @@ class MailValidator
     }
 
     /**
-     * @param array $nameservers
+     * Set servers for name resolving
+     * @param array $servers
      */
-    public function setNameservers($nameservers)
+    public function setServers($servers)
     {
-        $this->nameservers = $nameservers;
+        $this->servers = $servers;
     }
 
     /**
@@ -152,11 +153,11 @@ class MailValidator
             $mxs = [];
 
             // retrieve SMTP Server via MX query on domain
-            list($hosts, $mxweights) = $this->queryMX($domain);
+            list($hosts, $mxWeights) = $this->queryMX($domain);
 
             // retrieve MX priorities
             for ($n = 0; $n < count($hosts); $n++) {
-                $mxs[$hosts[$n]] = $mxweights[$n];
+                $mxs[$hosts[$n]] = $mxWeights[$n];
             }
             asort($mxs);
 
@@ -171,15 +172,15 @@ class MailValidator
             while (list($host) = each($mxs)) {
                 // connect to SMTP server
                 $this->debug("try $host:$this->port\n");
-                if ($this->sock = fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
-                    stream_set_timeout($this->sock, $this->maxReadTime);
+                if ($this->socket = fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
+                    stream_set_timeout($this->socket, $this->maxReadTime);
                     break;
                 }
             }
 
             // did we get a TCP socket
-            if ($this->sock) {
-                $reply = fread($this->sock, 2082);
+            if ($this->socket) {
+                $reply = fread($this->socket, 2082);
                 $this->debug("<<<\n$reply");
 
                 preg_match('/^([0-9]{3}) /ims', $reply, $matches);
@@ -188,7 +189,7 @@ class MailValidator
                 if ($code != '220') {
                     // MTA gave an error...
                     foreach ($users as $user) {
-                        $results[$user . '@' . $domain] = false;
+                        $results[$user . '@' . $domain] = $reply;
                     }
                     continue;
                 }
@@ -198,10 +199,10 @@ class MailValidator
                 // tell of sender
                 $this->send("MAIL FROM: <" . $this->fromUser . '@' . $this->fromDomain . ">");
 
-                // ask for each recepient on this domain
+                // ask for each recipient on this domain
                 foreach ($users as $user) {
 
-                    // ask of recepient
+                    // ask of recipient
                     $reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">");
 
                     // get code and msg from response
@@ -212,10 +213,11 @@ class MailValidator
                         // you received 250 so the email address was accepted
                         $results[$user . '@' . $domain] = true;
                     } elseif ($code == '451' || $code == '452') {
-                        // you received 451 so the email address was greylisted (or some temporary error occured on the MTA) - so assume is ok
+                        // you received 451 so the email address was greylisted
+                        // (or some temporary error occurred on the MTA) - so assume is ok
                         $results[$user . '@' . $domain] = true;
                     } else {
-                        $results[$user . '@' . $domain] = false;
+                        $results[$user . '@' . $domain] = $reply;
                     }
                 }
 
@@ -225,7 +227,7 @@ class MailValidator
                 // quit
                 $this->send("quit");
                 // close socket
-                fclose($this->sock);
+                fclose($this->socket);
             }
         }
 
@@ -235,9 +237,9 @@ class MailValidator
 
     private function send($msg)
     {
-        fwrite($this->sock, $msg . "\r\n");
+        fwrite($this->socket, $msg . "\r\n");
 
-        $reply = fread($this->sock, 2082);
+        $reply = fread($this->socket, 2082);
 
         $this->debug(">>>\n$msg\n");
         $this->debug("<<<\n$reply");
@@ -247,32 +249,33 @@ class MailValidator
 
     /**
      * Query DNS server for MX entries
+     * @param string $domain
      * @return array
      */
     private function queryMX($domain)
     {
         $hosts = [];
-        $mxweights = [];
+        $mxWeights = [];
         if (function_exists('getmxrr')) {
-            getmxrr($domain, $hosts, $mxweights);
+            getmxrr($domain, $hosts, $mxWeights);
         } else {
             // windows, we need Net_DNS
             require_once 'Net/DNS.php';
 
             $resolver = new Net_DNS_Resolver();
             $resolver->debug = $this->debug;
-            // nameservers to query
-            $resolver->nameservers = $this->nameservers;
+            // servers to query
+            $resolver->nameservers = $this->servers;
             $resp = $resolver->query($domain, 'MX');
             if ($resp) {
                 foreach ($resp->answer as $answer) {
                     $hosts[] = $answer->exchange;
-                    $mxweights[] = $answer->preference;
+                    $mxWeights[] = $answer->preference;
                 }
             }
 
         }
-        return [$hosts, $mxweights];
+        return [$hosts, $mxWeights];
     }
 
     private function debug($str)
