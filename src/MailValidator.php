@@ -172,7 +172,7 @@ class MailValidator
             while (list($host) = each($mxs)) {
                 // connect to SMTP server
                 $this->debug("try $host:$this->port\n");
-                if ($this->socket = fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
+                if ($this->socket = @fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
                     stream_set_timeout($this->socket, $this->maxReadTime);
                     break;
                 }
@@ -228,6 +228,10 @@ class MailValidator
                 $this->send("quit");
                 // close socket
                 fclose($this->socket);
+            } else {
+                foreach ($users as $user) {
+                    $results[$user . '@' . $domain] = 'Connection time out';
+                }
             }
         }
 
