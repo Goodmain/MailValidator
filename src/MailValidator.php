@@ -189,7 +189,7 @@ class MailValidator
                 if ($code != '220') {
                     // MTA gave an error...
                     foreach ($users as $user) {
-                        $results[$user . '@' . $domain] = $reply;
+                        $results[$user . '@' . $domain] = $resply ? $reply : 'Connection closed by remote host';
                     }
                     continue;
                 }
