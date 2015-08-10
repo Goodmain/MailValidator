@@ -166,17 +166,7 @@ class MailValidator
 
             $this->debug(print_r($mxs, 1));
 
-            $timeout = $this->maxConnectionTime;
-
-            // try each host
-            while (list($host) = each($mxs)) {
-                // connect to SMTP server
-                $this->debug("try $host:$this->port\n");
-                if ($this->socket = @fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
-                    stream_set_timeout($this->socket, $this->maxReadTime);
-                    break;
-                }
-            }
+            $this->connect($mxs);
 
             // did we get a TCP socket
             if ($this->socket) {
@@ -195,15 +185,15 @@ class MailValidator
                 }
 
                 // say helo
-                $this->send("HELO " . $this->fromDomain);
+                $this->send("HELO " . $this->fromDomain, $mxs);
                 // tell of sender
-                $this->send("MAIL FROM: <" . $this->fromUser . '@' . $this->fromDomain . ">");
+                $this->send("MAIL FROM: <" . $this->fromUser . '@' . $this->fromDomain . ">", $mxs);
 
                 // ask for each recipient on this domain
                 foreach ($users as $user) {
 
                     // ask of recipient
-                    $reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">");
+                    $reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">", $mxs);
 
                     // get code and msg from response
                     preg_match('/^([0-9]{3}) /ims', $reply, $matches);
@@ -222,10 +212,10 @@ class MailValidator
                 }
 
                 // reset before quit
-                $this->send("RSET");
+                $this->send("RSET", $mxs);
 
                 // quit
-                $this->send("quit");
+                $this->send("quit", $mxs);
                 // close socket
                 fclose($this->socket);
             } else {
@@ -238,10 +228,34 @@ class MailValidator
         return $results;
     }
 
-
-    private function send($msg)
+    private function connect($mxs)
     {
-        fwrite($this->socket, $msg . "\r\n");
+        $timeout = $this->maxConnectionTime;
+
+        // try each host
+        while (list($host) = each($mxs)) {
+            // connect to SMTP server
+            $this->debug("try $host:$this->port\n");
+            if ($this->socket = @fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
+                stream_set_timeout($this->socket, $this->maxReadTime);
+                break;
+            }
+        }
+    }
+
+    private function send($msg, $mxs)
+    {
+        $result = fwrite($this->socket, $msg . "\r\n");
+
+        if ($result === false) {
+            $this->connect($mxs);
+
+            $result = fwrite($this->socket, $msg . "\r\n");
+
+            if ($result === false) {
+                return '';
+            }
+        }
 
         $reply = fread($this->socket, 2082);
 
