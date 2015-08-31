@@ -137,9 +137,10 @@ class MailValidator
     /**
      * Validate Email Addresses
      * @param array|bool $emails - List of Emails to Validate
+     * @param bool $stopOnFirst - Stop validation if at least one validated
      * @return array - Associative List of Emails and their validation results
      */
-    public function validate($emails = false)
+    public function validate($emails = false, $stopOnFirst = false)
     {
         $results = [];
 
@@ -208,6 +209,10 @@ class MailValidator
                         $results[$user . '@' . $domain] = true;
                     } else {
                         $results[$user . '@' . $domain] = $reply;
+                    }
+
+                    if ($stopOnFirst && $results[$user . '@' . $domain] === true) {
+                        break;
                     }
                 }
 
