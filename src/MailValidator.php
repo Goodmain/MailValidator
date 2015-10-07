@@ -49,6 +49,11 @@ class MailValidator
     private $fromDomain = 'localhost';
 
     /**
+     * Host Name for HELO
+     */
+    private $senderDomain = 'localhost';
+
+    /**
      * Servers to use when make DNS query for MX entries
      * @var array $servers
      */
@@ -98,7 +103,13 @@ class MailValidator
         if (count($parts) == 2) {
             $this->fromUser = $parts[0];
             $this->fromDomain = $parts[1];
+            $this->senderDomain = $parts[1];
         }
+    }
+
+    public function setSenderDomain($domain)
+    {
+        $this->senderDomain = $domain;
     }
 
     /**
@@ -186,7 +197,7 @@ class MailValidator
                 }
 
                 // say helo
-                $this->send("HELO " . $this->fromDomain, $mxs);
+                $this->send("HELO " . $this->senderDomain, $mxs);
                 // tell of sender
                 $this->send("MAIL FROM: <" . $this->fromUser . '@' . $this->fromDomain . ">", $mxs);
 
