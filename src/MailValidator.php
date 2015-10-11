@@ -39,6 +39,12 @@ class MailValidator
     private $maxReadTime = 5;
 
     /**
+     * Should we check TLS and connect if available
+     * @var bool
+     */
+    private $checkTls = false;
+
+    /**
      * Username of sender
      */
     private $fromUser = 'user';
@@ -185,8 +191,7 @@ class MailValidator
                 $reply = fread($this->socket, 2082);
                 $this->debug("<<<\n$reply");
 
-                preg_match('/^([0-9]{3}) /ims', $reply, $matches);
-                $code = isset($matches[1]) ? $matches[1] : '';
+                $code = $this->getResponseCode($reply);
 
                 if ($code != '220') {
                     // MTA gave an error...
@@ -198,6 +203,28 @@ class MailValidator
 
                 // say helo
                 $this->send("HELO " . $this->senderDomain, $mxs);
+                $reply = fread($this->socket, 2082);
+                $this->debug("<<<\n$reply");
+
+                // check TLS support
+                if ($this->checkTls) {
+                    $this->send("EHLO " . $this->senderDomain, $mxs);
+                    $reply = fread($this->socket, 2082);
+                    $this->debug("<<<\n$reply");
+
+                    if (strpos($reply, 'STARTTLS') !== false) {
+                        $this->send("STARTTLS", $mxs);
+                        $reply = fread($this->socket, 2082);
+                        $this->debug("<<<\n$reply");
+                        stream_socket_enable_crypto($this->socket, true, STREAM_CRYPTO_METHOD_SSLv23_CLIENT);
+
+                        // say helo again for TLS
+                        $this->send("HELO " . $this->senderDomain, $mxs);
+                        $reply = fread($this->socket, 2082);
+                        $this->debug("<<<\n$reply");
+                    }
+                }
+
                 // tell of sender
                 $this->send("MAIL FROM: <" . $this->fromUser . '@' . $this->fromDomain . ">", $mxs);
 
@@ -207,9 +234,7 @@ class MailValidator
                     // ask of recipient
                     $reply = $this->send("RCPT TO: <" . $user . '@' . $domain . ">", $mxs);
 
-                    // get code and msg from response
-                    preg_match('/^([0-9]{3}) /ims', $reply, $matches);
-                    $code = isset($matches[1]) ? $matches[1] : '';
+                    $code = $this->getResponseCode($reply);
 
                     if ($code == '250') {
                         // you received 250 so the email address was accepted
@@ -252,7 +277,7 @@ class MailValidator
         while (list($host) = each($mxs)) {
             // connect to SMTP server
             $this->debug("try $host:$this->port\n");
-            if ($this->socket = @fsockopen($host, $this->port, $errno, $errstr, (float)$timeout)) {
+            if ($this->socket = @stream_socket_client("{$host}:{$this->port}", $errno, $errstr, (float)$timeout)) {
                 stream_set_timeout($this->socket, $this->maxReadTime);
                 break;
             }
@@ -279,6 +304,13 @@ class MailValidator
         $this->debug("<<<\n$reply");
 
         return $reply;
+    }
+
+    private function getResponseCode($response)
+    {
+        // get code and msg from response
+        preg_match('/^([0-9]{3}) /ims', $response, $matches);
+        return isset($matches[1]) ? $matches[1] : '';
     }
 
     /**
