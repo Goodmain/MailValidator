@@ -143,6 +143,14 @@ class MailValidator
     }
 
     /**
+     * @param bool $checkTls
+     */
+    public function setCheckTls($checkTls)
+    {
+        $this->checkTls = $checkTls;
+    }
+
+    /**
      * Set servers for name resolving
      * @param array $servers
      */
