@@ -242,7 +242,7 @@ class MailValidator
                     } elseif ($code == '451' || $code == '452') {
                         // you received 451 so the email address was greylisted
                         // (or some temporary error occurred on the MTA) - so assume is ok
-                        $results[$user . '@' . $domain] = true;
+                        $results[$user . '@' . $domain] = false;// considering as error
                     } else {
                         $results[$user . '@' . $domain] = $reply;
                     }
