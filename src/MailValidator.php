@@ -211,25 +211,17 @@ class MailValidator
 
                 // say helo
                 $this->send("HELO " . $this->senderDomain, $mxs);
-                $reply = fread($this->socket, 2082);
-                $this->debug("<<<\n$reply");
 
                 // check TLS support
                 if ($this->checkTls) {
-                    $this->send("EHLO " . $this->senderDomain, $mxs);
-                    $reply = fread($this->socket, 2082);
-                    $this->debug("<<<\n$reply");
+                    $reply = $this->send("EHLO " . $this->senderDomain, $mxs);
 
                     if (strpos($reply, 'STARTTLS') !== false) {
                         $this->send("STARTTLS", $mxs);
-                        $reply = fread($this->socket, 2082);
-                        $this->debug("<<<\n$reply");
                         stream_socket_enable_crypto($this->socket, true, STREAM_CRYPTO_METHOD_SSLv23_CLIENT);
 
                         // say helo again for TLS
                         $this->send("HELO " . $this->senderDomain, $mxs);
-                        $reply = fread($this->socket, 2082);
-                        $this->debug("<<<\n$reply");
                     }
                 }
 
