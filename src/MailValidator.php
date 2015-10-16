@@ -239,10 +239,6 @@ class MailValidator
                     if ($code == '250') {
                         // you received 250 so the email address was accepted
                         $results[$user . '@' . $domain] = true;
-                    } elseif ($code == '451' || $code == '452') {
-                        // you received 451 so the email address was greylisted
-                        // (or some temporary error occurred on the MTA) - so assume is ok
-                        $results[$user . '@' . $domain] = false;// considering as error
                     } elseif (strpos($reply, 'The user you are trying to contact is receiving mail') !== false) {
                         // Handling for unusual answers like: https://support.google.com/mail/answer/6592
                         $results[$user . '@' . $domain] = true;
